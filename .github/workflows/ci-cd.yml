@@ -1,43 +1,46 @@
-name: BankingApp CI/CD
+name: Java CI/CD for Banking-App
 
+# Trigger workflow on push or pull request to master branch
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
-  build-test-deploy:
+  build:
+
     runs-on: ubuntu-latest
 
     steps:
+    # Step 1: Checkout the code
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Setup JDK
+    # Step 2: Set up JDK (Java 17 for Spring Boot 3)
+    - name: Set up JDK
       uses: actions/setup-java@v3
       with:
         distribution: temurin
-        java-version: 17
+        java-version: '17'
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v3
+    # Step 3: Cache Maven dependencies for faster builds
+    - name: Cache Maven packages
+      uses: actions/cache@v3
       with:
-        node-version: 20
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
-    - name: Build Angular
-      run: |
-        cd banking-frontend
-        npm install
-        npm run build -- --prod
+    # Step 4: Build the project using Maven
+    - name: Build with Maven
+      run: mvn clean install
 
-    - name: Build Spring Boot
-      run: |
-        cd backend
-        mvn clean package -DskipTests=false
+    # Step 5: Run tests
+    - name: Run tests
+      run: mvn test
 
-    - name: Run Backend Tests
-      run: |
-        cd backend
-        mvn test
-
+    # Step 6: (Optional) Package your app
+    - name: Package Application
+      run: mvn package
